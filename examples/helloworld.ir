@@ -1,0 +1,8 @@
+pushs "Type your name, please.\n"
+writes
+read
+pushs "Hello, "
+writes
+writes
+pushs "!\n"
+writes

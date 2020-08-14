@@ -1,0 +1,41 @@
+start
+pushi 0     // Save the place where the function fib will write the result
+pushi 30    // arg1=30
+pusha fib
+call
+pop 1       // Removes the (one) parameter from the stack
+pushs "fib(30) = "
+writes
+writei      // Writes the result of fib(30);
+pushs "\n"
+writes
+stop
+
+fib:
+    nop
+    pushl -1
+    pushi 2
+    infeq
+    jz not_zero
+    pushi 1
+    storel -2
+    return
+
+not_zero:
+    pushi 0
+    pushl -1
+    pushi 1
+    sub
+    pusha fib
+    call
+    pop 1
+    pushi 0
+    pushl -1
+    pushi 2
+    sub
+    pusha fib
+    call
+    pop 1
+    add
+    storel -2
+    return
