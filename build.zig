@@ -21,7 +21,7 @@ pub fn build(b: *Builder) void {
     const exe = b.addExecutable("stackvm", "src/app.zig");
     exe.setTarget(target);
     exe.setBuildMode(mode);
-    exe.addPackagePath("clap", "lib/clap/clap.zig");
+    exe.addPackagePath("clap", "lib/zig-clap/clap.zig");
     exe.linkLibC();
     exe.install();
 
