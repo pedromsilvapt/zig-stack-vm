@@ -842,7 +842,12 @@ pub const InstructionsWriter = struct {
         try self.writeSlice(str);
     }
 
-    pub fn writeIntegerSized(self: *InstructionsWriter, comptime T: type, comptime size: usize, value: T) !void {
+    pub fn writeIntegerSized(self: *InstructionsWriter, comptime T: type, value: T) !void {
+        comptime const size: usize = switch (@typeInfo(T)) {
+            .Int => |t| t.bits / 8,
+            else => @compileError("Expected an integer type."),
+        };
+
         var bytes: [size]u8 = undefined;
 
         comptime var i = 0;
@@ -854,7 +859,7 @@ pub const InstructionsWriter = struct {
     }
 
     pub fn writeSize(self: *InstructionsWriter, value: usize) !void {
-        return self.writeIntegerSized(usize, 8, value);
+        return self.writeIntegerSized(usize, value);
     }
 
     pub fn writeSizeAt(self: *InstructionsWriter, value: usize, cursor: usize) !void {
@@ -864,11 +869,11 @@ pub const InstructionsWriter = struct {
     }
 
     pub fn writeInteger(self: *InstructionsWriter, value: i32) !void {
-        return self.writeIntegerSized(i32, 4, value);
+        return self.writeIntegerSized(i32, value);
     }
 
     pub fn writeFloat(self: *InstructionsWriter, value: f64) !void {
-        return self.writeSize(@bitCast(usize, value));
+        return self.writeIntegerSized(u64, @bitCast(u64, value));
     }
 
     // Transfers ownership of the byte array
@@ -959,7 +964,7 @@ pub const InstructionsReader = struct {
     }
 
     pub fn readFloat(self: *InstructionsReader) !f64 {
-        return @bitCast(f64, try self.readSize());
+        return @bitCast(f64, try self.readIntegerSized(u64));
     }
 
     pub fn readString(self: *InstructionsReader) ![]const u8 {

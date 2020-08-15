@@ -19,13 +19,10 @@ const InstructionParameter = union(enum) {
 };
 
 pub const Parser = struct {
-    allocator: *Allocator = null,
+    allocator: *Allocator,
     source: []const u8,
     owned: bool,
     position: TextPosition = TextPosition.initEmpty(),
-    // cursor: usize = 0,
-    // line: usize = 0,
-    // column: usize = 0,
     err_message: ?[]u8 = null,
     source_map: SourceMap,
 
