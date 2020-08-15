@@ -959,7 +959,6 @@ pub const InstructionsReader = struct {
     }
 
     pub fn readInteger(self: *InstructionsReader) !i32 {
-        // return (@intCast(i32, slice[0]) << 24) | (@intCast(i32, slice[1]) << 16) | (@intCast(i32, slice[2]) << 8) | @intCast(i32, slice[3]);
         return self.readIntegerSized(i32);
     }
 

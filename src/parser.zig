@@ -513,12 +513,12 @@ pub const Parser = struct {
     }
 };
 
-pub const TextPosition = struct {
-    line: usize,
-    column: usize,
-    offset: usize,
+pub const TextPosition = extern struct {
+    line: u32,
+    column: u32,
+    offset: u32,
 
-    pub fn init(line: usize, column: usize, offset: usize) TextPosition {
+    pub fn init(line: u32, column: u32, offset: u32) TextPosition {
         return TextPosition{
             .line = line,
             .column = column,
@@ -580,7 +580,7 @@ pub const SourceMap = struct {
     }
 
     pub fn move(self: *SourceMap) SourceMap {
-        const destination = SourceMap.init(self.instructions_positions.allocator);
+        var destination = SourceMap.init(self.instructions_positions.allocator);
 
         destination.instructions_positions = self.instructions_positions.move();
         destination.current_position = self.current_position;

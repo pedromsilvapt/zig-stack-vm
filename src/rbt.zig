@@ -62,7 +62,7 @@ pub fn RedBlackTree(comptime T: type, comptime comparator: fn (T, T) i32) type {
             self.len = 0;
 
             return Tree{
-                .allocator = allocator,
+                .allocator = self.allocator,
                 .len = self.len,
                 .root = root,
             };
