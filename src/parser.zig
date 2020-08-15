@@ -71,17 +71,6 @@ pub const Parser = struct {
     // Becomes invalid when deinit is called
     pub fn getCurrentLine(self: *Parser) []const u8 {
         return self.getSourceSpan(self.position, self.position);
-        // const start_of_line: usize = self.cursor - self.column;
-        // const end_of_line: usize = blk: {
-        //     var i = self.cursor;
-        //     const l = self.source.len;
-
-        //     while (i < l) : (i += 1) if (self.source[i] == '\n') break;
-
-        //     break :blk i;
-        // };
-
-        // return self.source[start_of_line..end_of_line];
     }
 
     // The returned string is still owned by Parser
@@ -436,6 +425,8 @@ pub const Parser = struct {
         while (!self.endOfFile()) {
             self.skipWhiteSpace();
 
+            if (self.endOfFile()) break;
+
             var backtrack = self.position;
 
             var label_match = self.parseLabelMarker() catch |err| switch (err) {
@@ -463,8 +454,11 @@ pub const Parser = struct {
 
                 self.skipWhiteSpace();
 
+                const backtrack_arg = self.position;
+
                 const parameter = self.parseInstructionParameter(inst) catch |err| switch (err) {
                     error.NoMatch => {
+                        self.seekTo(backtrack_arg);
                         self.err_message = try self.allocator.dupe(u8, "No valid instruction parameter.");
                         return err;
                     },
@@ -494,6 +488,8 @@ pub const Parser = struct {
 
                 continue;
             }
+
+            self.seekTo(backtrack);
 
             // What happens when there is not match at all? Return error
             self.err_message = try self.allocator.dupe(u8, "No valid instruction or label matched.");
