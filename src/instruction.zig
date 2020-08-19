@@ -294,16 +294,14 @@ pub inline fn instStri(vm: *VirtualMachine) !void {
 pub inline fn instStrf(vm: *VirtualMachine) !void {
     const float = vm.stack.pop().Float;
 
-    // TODO:
-    // var buf: [30]u8 = undefined;
+    var full_buf: [11]u8 = undefined;
+    var buf = try std.fmt.bufPrint(&full_buf, "{d}", .{ float });
 
-    // var len = std.fmt.formatFloatDecimal(buf, float, 10, false, std.fmt.FormatOptions{});
+    const address = try vm.strings.alloc(buf.len);
 
-    // const address = try vm.strings.alloc(len);
+    try vm.strings.storeMany(address, buf);
 
-    // try vm.strings.storeMany(address, buf[0..len]);
-
-    // try vm.stack.push(.{ .AddressString = address });
+    try vm.stack.push(.{ .AddressString = address });
 }
 
 pub inline fn instDup(vm: *VirtualMachine) !void {
@@ -550,28 +548,24 @@ pub inline fn instSwap(vm: *VirtualMachine) !void {
 pub inline fn instWriteI(vm: *VirtualMachine) !void {
     const int = vm.stack.pop().Integer;
 
-    // _ = try std.format.format(std.io.getStdOut(), )
     try std.io.getStdOut().writer().print("{}", .{int});
 }
 
 pub inline fn instWritelnI(vm: *VirtualMachine) !void {
     const int = vm.stack.pop().Integer;
 
-    // _ = try std.format.format(std.io.getStdOut(), )
     try std.io.getStdOut().writer().print("{}\n", .{int});
 }
 
 pub inline fn instWriteF(vm: *VirtualMachine) !void {
     const float = vm.stack.pop().Float;
 
-    // _ = try std.format.format(std.io.getStdOut(), )
     try std.io.getStdOut().writer().print("{d}", .{float});
 }
 
 pub inline fn instWritelnF(vm: *VirtualMachine) !void {
     const float = vm.stack.pop().Float;
 
-    // _ = try std.format.format(std.io.getStdOut(), )
     try std.io.getStdOut().writer().print("{d}\n", .{float});
 }
 
