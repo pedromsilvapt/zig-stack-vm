@@ -69,3 +69,46 @@ pub fn main () !void {
     try vm.execute();
 }
 ```
+
+## Python Bindings
+This repository provides bindings to work with the StackVM from Python. The file
+`bindings/python/libstackvm.py` found in this repository should be copied to your project.  Then edit the line there to point to your shared library built with Zig:
+
+```python
+lib = cdll.LoadLibrary("libstackvm.dll")
+```
+
+Below is a simple example of how to use the bindings.
+
+```python
+from libstackvm import *
+
+with open( "examples/fib.ir", 'r') as f:
+        content = f.read()
+
+    parser = Parser.init(content)
+
+    reader = parser.parse()
+    
+    vm = VirtualMachine.init(reader)
+
+    try:
+        vm.execute()
+
+        while vm.stack:
+            val = vm.stack.pop()
+
+            print("Stack value", val.value)
+
+        print("-- POINTERS")
+        print("-- fp:", vm.registers.frame_pointer)
+        print("-- sp:", vm.registers.stack_pointer)
+        print("-- cp:", vm.registers.code_pointer)
+        print("-- gp:", vm.registers.global_pointer)
+    except BaseException as ex:
+        print(ex)
+        
+        vm.deinit()
+        reader.destroy()
+        parser.deinit()
+```

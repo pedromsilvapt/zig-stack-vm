@@ -6,7 +6,7 @@ const Registers = @import("./vm.zig").Registers;
 const StackFrame = @import("./vm.zig").StackFrame;
 const Value = @import("./vm.zig").Value;
 
-pub const Instruction = enum(u8) {
+pub const Instruction = extern enum(u8) {
     Concat,
     // Control
     Jump,

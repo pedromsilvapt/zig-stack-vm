@@ -527,13 +527,21 @@ pub const TextPosition = extern struct {
     }
 };
 
-pub const InstructionSpan = struct {
+pub const InstructionSpan = extern struct {
     instruction: usize,
     start: TextPosition,
     end: TextPosition,
+
+    pub fn init(instruction: usize, start: TextPosition, end: TextPosition) InstructionSpan {
+        return InstructionSpan{
+            .instruction = instruction,
+            .start = start,
+            .end = end,
+        };
+    }
 };
 
-pub const SourceMap = struct {
+pub const SourceMap = extern struct {
     instructions_positions: RedBlackTree(InstructionSpan, SourceMap.compareSpan),
     current_position: TextPosition,
     current_instruction: usize,

@@ -70,7 +70,7 @@ pub const VirtualMachine = struct {
     }
 };
 
-pub const StackFrame = struct {
+pub const StackFrame = extern struct {
     frame_pointer: usize = 0,
     code_pointer: usize = 0,
 

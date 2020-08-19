@@ -26,7 +26,7 @@ const NodeColor = enum {
 };
 
 pub fn RedBlackTree(comptime T: type, comptime comparator: fn (T, T) i32) type {
-    return struct {
+    return extern struct {
         allocator: *Allocator,
         len: u32,
         root: ?*Node,
