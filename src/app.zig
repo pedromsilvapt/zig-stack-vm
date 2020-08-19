@@ -7,7 +7,7 @@ const InstructionsReader = @import("./instruction.zig").InstructionsReader;
 const Parser = @import("./parser.zig").Parser;
 
 pub fn main() anyerror!void {
-    const alloc = std.heap.c_allocator;
+    const alloc = std.heap.page_allocator;
 
     const params = comptime [_]clap.Param(clap.Help){
         clap.parseParam("-h, --help          Display this help and exit.              ") catch unreachable,

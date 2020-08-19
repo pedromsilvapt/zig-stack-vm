@@ -22,7 +22,6 @@ pub fn build(b: *Builder) void {
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.addPackagePath("clap", "lib/zig-clap/clap.zig");
-    exe.linkLibC();
     exe.install();
 
     const run_cmd = exe.run();
