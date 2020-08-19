@@ -98,7 +98,7 @@ pub const Instruction = enum(u8) {
             .PushA => instPushA(vm),
             .Call => instCall(vm),
             .Return => instReturn(vm),
-            .Start => {},
+            .Start => instStart(vm),
             .Nop => {},
             .Stop => instStop(vm),
             .Err => instErr(vm),
@@ -189,26 +189,30 @@ fn padd(address: usize, offset: i32) usize {
     }
 }
 
+pub inline fn instStart(vm: *VirtualMachine) !void {
+    vm.registers.frame_pointer = Registers.getStackPointer(vm);
+}
+
 pub inline fn instCall(vm: *VirtualMachine) !void {
     const address = vm.stack.pop().AddressCode;
 
-    const frame = StackFrame.init(vm.registers.frame_pointer, Registers.get_code_pointer(vm));
+    const frame = StackFrame.init(vm.registers.frame_pointer, Registers.getCodePointer(vm));
 
     try vm.frames.push(frame);
 
-    vm.registers.frame_pointer = Registers.get_stack_pointer(vm);
-    Registers.set_code_pointer(vm, address);
+    vm.registers.frame_pointer = Registers.getStackPointer(vm);
+    Registers.setCodePointer(vm, address);
 }
 
 pub inline fn instReturn(vm: *VirtualMachine) !void {
     const frame = vm.frames.pop();
 
-    while (Registers.get_stack_pointer(vm) > vm.registers.frame_pointer) {
+    while (Registers.getStackPointer(vm) > vm.registers.frame_pointer) {
         _ = vm.stack.pop();
     }
 
     vm.registers.frame_pointer = frame.frame_pointer;
-    Registers.set_code_pointer(vm, frame.code_pointer);
+    Registers.setCodePointer(vm, frame.code_pointer);
 }
 
 pub inline fn instStop(vm: *VirtualMachine) !void {
@@ -222,7 +226,7 @@ pub inline fn instErr(vm: *VirtualMachine) !void {
 pub inline fn instJump(vm: *VirtualMachine) !void {
     const address = try vm.bytecode.readSize();
 
-    Registers.set_code_pointer(vm, address);
+    Registers.setCodePointer(vm, address);
 }
 
 pub inline fn instJz(vm: *VirtualMachine) !void {
@@ -231,7 +235,7 @@ pub inline fn instJz(vm: *VirtualMachine) !void {
     const condition = vm.stack.pop().Integer;
 
     if (condition == 0) {
-        Registers.set_code_pointer(vm, address);
+        Registers.setCodePointer(vm, address);
     }
 }
 
@@ -305,7 +309,7 @@ pub inline fn instStrf(vm: *VirtualMachine) !void {
 pub inline fn instDup(vm: *VirtualMachine) !void {
     const n = try vm.bytecode.readInteger();
 
-    const pointer = Registers.get_stack_pointer(vm);
+    const pointer = Registers.getStackPointer(vm);
 
     var i: i32 = 0;
 
@@ -317,7 +321,7 @@ pub inline fn instDup(vm: *VirtualMachine) !void {
 pub inline fn instDupN(vm: *VirtualMachine) !void {
     const n = vm.stack.pop().Integer;
 
-    const pointer = Registers.get_stack_pointer(vm);
+    const pointer = Registers.getStackPointer(vm);
 
     var i: i32 = 0;
 
@@ -718,7 +722,7 @@ pub inline fn instPushL(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instPushSP(vm: *VirtualMachine) !void {
-    try vm.stack.push(Value{ .AddressStack = Registers.get_stack_pointer(vm) });
+    try vm.stack.push(Value{ .AddressStack = Registers.getStackPointer(vm) });
 }
 
 pub inline fn instPushFP(vm: *VirtualMachine) !void {

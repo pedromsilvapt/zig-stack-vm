@@ -96,20 +96,22 @@ pub const Registers = struct {
         if (self.err) |err| self.allocator.free(err);
     }
 
-    pub fn get_code_pointer(vm: *VirtualMachine) usize {
+    pub fn getCodePointer(vm: *VirtualMachine) usize {
         return vm.bytecode.cursor;
     }
 
-    pub fn set_code_pointer(vm: *VirtualMachine, value: usize) void {
+    pub fn setCodePointer(vm: *VirtualMachine, value: usize) void {
         vm.bytecode.cursor = value;
     }
 
-    pub fn get_stack_pointer(vm: *VirtualMachine) usize {
+    pub fn getStackPointer(vm: *VirtualMachine) usize {
         return vm.stack.len;
     }
 
-    pub fn set_stack_pointer(vm: *VirtualMachine, value: usize) void {
-        // TODO: Should we be able to do this? I dunno
+    pub fn setStackPointer(vm: *VirtualMachine, value: usize) void {
+        _ = vm.stack.list.resize(value) catch return;
+
+        vm.stack.len = value;
     }
 };
 
