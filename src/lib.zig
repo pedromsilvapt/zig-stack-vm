@@ -353,5 +353,5 @@ export fn stackvm_stack_push_address(vm: *VirtualMachine, kind: ValueType, value
 }
 
 export fn stackvm_stack_pop(vm: *VirtualMachine) ValueExtern {
-    return ValueExtern.initIntern(vm.stack.pop());
+    return ValueExtern.initIntern(vm.stack.pop() catch return ValueExtern.initNone());
 }

@@ -194,7 +194,7 @@ pub inline fn instStart(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instCall(vm: *VirtualMachine) !void {
-    const address = vm.stack.pop().AddressCode;
+    const address = try vm.stack.popField(.AddressCode);
 
     const frame = StackFrame.init(vm.registers.frame_pointer, Registers.getCodePointer(vm));
 
@@ -205,10 +205,10 @@ pub inline fn instCall(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instReturn(vm: *VirtualMachine) !void {
-    const frame = vm.frames.pop();
+    const frame = try vm.frames.pop();
 
     while (Registers.getStackPointer(vm) > vm.registers.frame_pointer) {
-        _ = vm.stack.pop();
+        _ = try vm.stack.pop();
     }
 
     vm.registers.frame_pointer = frame.frame_pointer;
@@ -232,7 +232,7 @@ pub inline fn instJump(vm: *VirtualMachine) !void {
 pub inline fn instJz(vm: *VirtualMachine) !void {
     const address = try vm.bytecode.readSize();
 
-    const condition = vm.stack.pop().Integer;
+    const condition = try vm.stack.popField(.Integer);
 
     if (condition == 0) {
         Registers.setCodePointer(vm, address);
@@ -246,7 +246,7 @@ pub inline fn instPushA(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instAtoi(vm: *VirtualMachine) !void {
-    const addr = vm.stack.pop().AddressString;
+    const addr = try vm.stack.popField(.AddressString);
 
     const slice = try vm.strings.loadAll(addr);
 
@@ -256,7 +256,7 @@ pub inline fn instAtoi(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instAtof(vm: *VirtualMachine) !void {
-    const addr = vm.stack.pop().AddressString;
+    const addr = try vm.stack.popField(.AddressString);
 
     const slice = try vm.strings.loadAll(addr);
 
@@ -266,19 +266,19 @@ pub inline fn instAtof(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instItof(vm: *VirtualMachine) !void {
-    const int = vm.stack.pop().Integer;
+    const int = try vm.stack.popField(.Integer);
 
     try vm.stack.push(.{ .Float = @intToFloat(f64, int) });
 }
 
 pub inline fn instFtoi(vm: *VirtualMachine) !void {
-    const float = vm.stack.pop().Float;
+    const float = try vm.stack.popField(.Float);
 
     try vm.stack.push(.{ .Integer = @floatToInt(i32, float) });
 }
 
 pub inline fn instStri(vm: *VirtualMachine) !void {
-    const int = vm.stack.pop().Integer;
+    const int = try vm.stack.popField(.Integer);
 
     var buf: [11]u8 = undefined;
 
@@ -292,10 +292,10 @@ pub inline fn instStri(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instStrf(vm: *VirtualMachine) !void {
-    const float = vm.stack.pop().Float;
+    const float = try vm.stack.popField(.Float);
 
     var full_buf: [11]u8 = undefined;
-    var buf = try std.fmt.bufPrint(&full_buf, "{d}", .{ float });
+    var buf = try std.fmt.bufPrint(&full_buf, "{d}", .{float});
 
     const address = try vm.strings.alloc(buf.len);
 
@@ -317,7 +317,7 @@ pub inline fn instDup(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instDupN(vm: *VirtualMachine) !void {
-    const n = vm.stack.pop().Integer;
+    const n = try vm.stack.popField(.Integer);
 
     const pointer = Registers.getStackPointer(vm);
 
@@ -337,7 +337,7 @@ pub inline fn instAlloc(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instAllocN(vm: *VirtualMachine) !void {
-    const size = vm.stack.pop().Integer;
+    const size = try vm.stack.popField(.Integer);
 
     if (size <= 0) return error.InvalidOperand;
 
@@ -347,168 +347,167 @@ pub inline fn instAllocN(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instFree(vm: *VirtualMachine) !void {
-    const address = vm.stack.pop();
+    const address = try vm.stack.popField(.AddressHeap);
 
-    vm.heap.free(address.AddressHeap);
+    vm.heap.free(address);
 }
 
 pub inline fn instEqual(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop();
-    const op1 = vm.stack.pop();
-
+    const op2 = try vm.stack.pop();
+    
     // TODO: Improve type checking
-    const equal = switch (op1) {
-        .Float => |num| num == op2.Float,
-        .Integer => |num| num == op2.Integer,
-        .String => |str| std.mem.eql(u8, str, op2.String),
-        .AddressCode => |addr| addr == op2.AddressCode,
-        .AddressHeap => |addr| addr == op2.AddressHeap,
-        .AddressStack => |addr| addr == op2.AddressStack,
-        .AddressString => |addr| addr == op2.AddressString,
+    const equal = switch (op2) {
+        .Float => |num| num == try vm.stack.popField(.Float),
+        .Integer => |num| num == try vm.stack.popField(.Integer),
+        .String => |str| std.mem.eql(u8, str, try vm.stack.popField(.String)),
+        .AddressCode => |addr| addr == try vm.stack.popField(.AddressCode),
+        .AddressHeap => |addr| addr == try vm.stack.popField(.AddressHeap),
+        .AddressStack => |addr| addr == try vm.stack.popField(.AddressStack),
+        .AddressString => |addr| addr == try vm.stack.popField(.AddressString),
     };
 
     try vm.stack.push(.{ .Integer = @boolToInt(equal) });
 }
 
 pub inline fn instFAdd(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Float;
-    const op1 = vm.stack.pop().Float;
+    const op2 = try vm.stack.popField(.Float);
+    const op1 = try vm.stack.popField(.Float);
 
     try vm.stack.push(.{ .Float = op1 + op2 });
 }
 
 pub inline fn instFSub(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Float;
-    const op1 = vm.stack.pop().Float;
+    const op2 = try vm.stack.popField(.Float);
+    const op1 = try vm.stack.popField(.Float);
 
     try vm.stack.push(.{ .Float = op1 - op2 });
 }
 
 pub inline fn instFMul(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Float;
-    const op1 = vm.stack.pop().Float;
+    const op2 = try vm.stack.popField(.Float);
+    const op1 = try vm.stack.popField(.Float);
 
     try vm.stack.push(.{ .Float = op1 * op2 });
 }
 
 pub inline fn instFDiv(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Float;
-    const op1 = vm.stack.pop().Float;
+    const op2 = try vm.stack.popField(.Float);
+    const op1 = try vm.stack.popField(.Float);
 
     try vm.stack.push(.{ .Float = op1 / op2 });
 }
 
 pub inline fn instFInf(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Float;
-    const op1 = vm.stack.pop().Float;
+    const op2 = try vm.stack.popField(.Float);
+    const op1 = try vm.stack.popField(.Float);
 
     try vm.stack.push(.{ .Integer = @boolToInt(op1 < op2) });
 }
 
 pub inline fn instFInfEq(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Float;
-    const op1 = vm.stack.pop().Float;
+    const op2 = try vm.stack.popField(.Float);
+    const op1 = try vm.stack.popField(.Float);
 
     try vm.stack.push(.{ .Integer = @boolToInt(op1 <= op2) });
 }
 
 pub inline fn instFSup(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Float;
-    const op1 = vm.stack.pop().Float;
+    const op2 = try vm.stack.popField(.Float);
+    const op1 = try vm.stack.popField(.Float);
 
     try vm.stack.push(.{ .Integer = @boolToInt(op1 > op2) });
 }
 
 pub inline fn instFSupEq(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Float;
-    const op1 = vm.stack.pop().Float;
+    const op2 = try vm.stack.popField(.Float);
+    const op1 = try vm.stack.popField(.Float);
 
     try vm.stack.push(.{ .Integer = @boolToInt(op1 >= op2) });
 }
 
 pub inline fn instFCos(vm: *VirtualMachine) !void {
-    const op = vm.stack.pop().Float;
+    const op = try vm.stack.popField(.Float);
 
     try vm.stack.push(.{ .Float = std.math.cos(op) });
 }
 
 pub inline fn instFSin(vm: *VirtualMachine) !void {
-    const op = vm.stack.pop().Float;
+    const op = try vm.stack.popField(.Float);
 
     try vm.stack.push(.{ .Float = std.math.sin(op) });
 }
 
 pub inline fn instAdd(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Integer;
-    const op1 = vm.stack.pop().Integer;
+    const op2 = try vm.stack.popField(.Integer);
+    const op1 = try vm.stack.popField(.Integer);
 
     try vm.stack.push(.{ .Integer = op1 + op2 });
 }
 
 pub inline fn instSub(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Integer;
-    const op1 = vm.stack.pop().Integer;
+    const op2 = try vm.stack.popField(.Integer);
+    const op1 = try vm.stack.popField(.Integer);
 
     try vm.stack.push(.{ .Integer = op1 - op2 });
 }
 
 pub inline fn instMul(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Integer;
-    const op1 = vm.stack.pop().Integer;
+    const op2 = try vm.stack.popField(.Integer);
+    const op1 = try vm.stack.popField(.Integer);
 
     try vm.stack.push(.{ .Integer = op1 * op2 });
 }
 
 pub inline fn instDiv(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Integer;
-    const op1 = vm.stack.pop().Integer;
+    const op2 = try vm.stack.popField(.Integer);
+    const op1 = try vm.stack.popField(.Integer);
 
     try vm.stack.push(.{ .Integer = @divFloor(op1, op2) });
 }
 
 pub inline fn instMod(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Integer;
-    const op1 = vm.stack.pop().Integer;
+    const op2 = try vm.stack.popField(.Integer);
+    const op1 = try vm.stack.popField(.Integer);
 
     try vm.stack.push(.{ .Integer = @mod(op1, op2) });
 }
 
 pub inline fn instInf(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Integer;
-    const op1 = vm.stack.pop().Integer;
+    const op2 = try vm.stack.popField(.Integer);
+    const op1 = try vm.stack.popField(.Integer);
 
     try vm.stack.push(.{ .Integer = @boolToInt(op1 < op2) });
 }
 
 pub inline fn instInfEq(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Integer;
-    const op1 = vm.stack.pop().Integer;
+    const op2 = try vm.stack.popField(.Integer);
+    const op1 = try vm.stack.popField(.Integer);
 
     try vm.stack.push(.{ .Integer = @boolToInt(op1 <= op2) });
 }
 
 pub inline fn instSup(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Integer;
-    const op1 = vm.stack.pop().Integer;
+    const op2 = try vm.stack.popField(.Integer);
+    const op1 = try vm.stack.popField(.Integer);
 
     try vm.stack.push(.{ .Integer = @boolToInt(op1 > op2) });
 }
 
 pub inline fn instSupEq(vm: *VirtualMachine) !void {
-    const op2 = vm.stack.pop().Integer;
-    const op1 = vm.stack.pop().Integer;
+    const op2 = try vm.stack.popField(.Integer);
+    const op1 = try vm.stack.popField(.Integer);
 
     try vm.stack.push(.{ .Integer = @boolToInt(op1 >= op2) });
 }
 
 pub inline fn instNot(vm: *VirtualMachine) !void {
-    const op = vm.stack.pop().Integer;
+    const op = try vm.stack.popField(.Integer);
 
     try vm.stack.push(.{ .Integer = @boolToInt(!(op != 0)) });
 }
 
 pub inline fn instLoad(vm: *VirtualMachine) !void {
-    const address = vm.stack.pop();
+    const address = try vm.stack.pop();
 
     const offset = try vm.bytecode.readInteger();
 
@@ -523,9 +522,9 @@ pub inline fn instLoad(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instLoadN(vm: *VirtualMachine) !void {
-    const offset = vm.stack.pop().Integer;
+    const offset = try vm.stack.popField(.Integer);
 
-    const address = vm.stack.pop();
+    const address = try vm.stack.pop();
 
     // TODO: GC
     var value = switch (address) {
@@ -538,39 +537,39 @@ pub inline fn instLoadN(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instSwap(vm: *VirtualMachine) !void {
-    const value1 = vm.stack.pop();
-    const value2 = vm.stack.pop();
+    const value1 = try vm.stack.pop();
+    const value2 = try vm.stack.pop();
 
     try vm.stack.push(value1);
     try vm.stack.push(value2);
 }
 
 pub inline fn instWriteI(vm: *VirtualMachine) !void {
-    const int = vm.stack.pop().Integer;
+    const int = try vm.stack.popField(.Integer);
 
     try std.io.getStdOut().writer().print("{}", .{int});
 }
 
 pub inline fn instWritelnI(vm: *VirtualMachine) !void {
-    const int = vm.stack.pop().Integer;
+    const int = try vm.stack.popField(.Integer);
 
     try std.io.getStdOut().writer().print("{}\n", .{int});
 }
 
 pub inline fn instWriteF(vm: *VirtualMachine) !void {
-    const float = vm.stack.pop().Float;
+    const float = try vm.stack.popField(.Float);
 
     try std.io.getStdOut().writer().print("{d}", .{float});
 }
 
 pub inline fn instWritelnF(vm: *VirtualMachine) !void {
-    const float = vm.stack.pop().Float;
+    const float = try vm.stack.popField(.Float);
 
     try std.io.getStdOut().writer().print("{d}\n", .{float});
 }
 
 pub inline fn instWriteS(vm: *VirtualMachine) !void {
-    const str_addr = vm.stack.pop().AddressString;
+    const str_addr = try vm.stack.popField(.AddressString);
 
     const str = try vm.strings.loadAll(str_addr);
 
@@ -578,7 +577,7 @@ pub inline fn instWriteS(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instWritelnS(vm: *VirtualMachine) !void {
-    const str_addr = vm.stack.pop().AddressString;
+    const str_addr = try vm.stack.popField(.AddressString);
 
     const str = try vm.strings.loadAll(str_addr);
 
@@ -612,8 +611,8 @@ pub inline fn instRead(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instConcat(vm: *VirtualMachine) !void {
-    var s2 = vm.stack.pop().AddressString;
-    var s1 = vm.stack.pop().AddressString;
+    var s2 = try vm.stack.popField(.AddressString);
+    var s1 = try vm.stack.popField(.AddressString);
 
     const s1_value = try vm.strings.loadAll(s1);
     const s2_value = try vm.strings.loadAll(s2);
@@ -629,9 +628,9 @@ pub inline fn instConcat(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instPadd(vm: *VirtualMachine) !void {
-    const offset = vm.stack.pop().Integer;
+    const offset = try vm.stack.popField(.Integer);
 
-    var address = vm.stack.pop();
+    var address = try vm.stack.pop();
 
     // TODO: GC
     address = switch (address) {
@@ -650,16 +649,16 @@ pub inline fn instPop(vm: *VirtualMachine) !void {
 
     var i: i32 = 0;
     while (i < n) : (i += 1) {
-        _ = vm.stack.pop();
+        _ = try vm.stack.pop();
     }
 }
 
 pub inline fn instPopN(vm: *VirtualMachine) !void {
-    const n = vm.stack.pop().Integer;
+    const n = try vm.stack.popField(.Integer);
 
     var i: i32 = 0;
     while (i < n) : (i += 1) {
-        _ = vm.stack.pop();
+        _ = try vm.stack.pop();
     }
 }
 
@@ -729,10 +728,10 @@ pub inline fn instPushGP(vm: *VirtualMachine) !void {
 
 pub inline fn instStore(vm: *VirtualMachine) !void {
     // We read the value we want to store from the operands stack
-    const value = vm.stack.pop();
+    const value = try vm.stack.pop();
 
     // And also the address to store it in, from the operands stack
-    const address = vm.stack.pop();
+    const address = try vm.stack.pop();
 
     // Additionally we also accept an offset for the address, as a parameter
     const offset = try vm.bytecode.readInteger();
@@ -752,7 +751,7 @@ pub inline fn instStore(vm: *VirtualMachine) !void {
 
 pub inline fn instStoreL(vm: *VirtualMachine) !void {
     // We read the value we want to store from the operands stack
-    const value = vm.stack.pop();
+    const value = try vm.stack.pop();
 
     // Additionally we also accept an offset for the address, as a parameter
     const offset = try vm.bytecode.readInteger();
@@ -765,7 +764,7 @@ pub inline fn instStoreL(vm: *VirtualMachine) !void {
 
 pub inline fn instStoreG(vm: *VirtualMachine) !void {
     // We read the value we want to store from the operands stack
-    const value = vm.stack.pop();
+    const value = try vm.stack.pop();
 
     // Additionally we also accept an offset for the address, as a parameter
     const offset = try vm.bytecode.readInteger();
@@ -777,13 +776,13 @@ pub inline fn instStoreG(vm: *VirtualMachine) !void {
 }
 
 pub inline fn instStoreN(vm: *VirtualMachine) !void {
-    const value = vm.stack.pop();
+    const value = try vm.stack.pop();
 
     // Additionally we also accept an offset for the address, as a parameter
-    const offset = vm.stack.pop().Integer;
+    const offset = try vm.stack.popField(.Integer);
 
     // And also the address to store it in, from the operands stack
-    const address = vm.stack.pop();
+    const address = try vm.stack.pop();
 
     switch (address) {
         .AddressHeap => |addr| {

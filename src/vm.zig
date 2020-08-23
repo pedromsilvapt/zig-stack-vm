@@ -297,10 +297,42 @@ pub fn Stack(comptime T: type) type {
             try self.list.append(value);
         }
 
-        pub fn pop(self: *Self) T {
+        pub fn pop(self: *Self) !T {
+            if (self.list.items.len <= 0) {
+                return error.StackUnderflow;
+            }
+
+            defer self.len = self.list.items.len;
+
+            return self.list.pop();
+        }
+
+        pub fn popAssumeLen(self: *Self) T {
             defer self.len -= 1;
 
             return self.list.pop();
         }
+
+        pub usingnamespace if (@typeInfo(T) == .Union) struct {
+            pub fn popField(self: *Self, comptime tag: @TagType(T)) error{InvalidOperand,StackUnderflow}!std.meta.TagPayloadType(T, tag) {
+                if (self.list.items.len <= 0) {
+                    return error.StackUnderflow;
+                }
+
+                // We peek the item at the top of the stack instead of popping it
+                // So that if the expected type is wrong and we return an error
+                // the value is still at the top of the stack for better debugging
+                var un = self.list.items[self.list.items.len - 1];
+
+                if (un != tag){
+                    return error.InvalidOperand;
+                }
+
+                _ = self.list.pop();
+                self.len = self.list.items.len;
+
+                return @field(un, @tagName(tag));
+            }
+        } else struct {};
     };
 }
