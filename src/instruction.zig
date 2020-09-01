@@ -354,16 +354,25 @@ pub inline fn instFree(vm: *VirtualMachine) !void {
 
 pub inline fn instEqual(vm: *VirtualMachine) !void {
     const op2 = try vm.stack.pop();
-    
-    // TODO: Improve type checking
+    const op1 = try vm.stack.pop();
+
     const equal = switch (op2) {
-        .Float => |num| num == try vm.stack.popField(.Float),
-        .Integer => |num| num == try vm.stack.popField(.Integer),
-        .String => |str| std.mem.eql(u8, str, try vm.stack.popField(.String)),
-        .AddressCode => |addr| addr == try vm.stack.popField(.AddressCode),
-        .AddressHeap => |addr| addr == try vm.stack.popField(.AddressHeap),
-        .AddressStack => |addr| addr == try vm.stack.popField(.AddressStack),
-        .AddressString => |addr| addr == try vm.stack.popField(.AddressString),
+        .Float => |num| op1 == .Float and num == op1.Float,
+        .Integer => |num| op1 == .Integer and num == op1.Integer,
+        .String => |str| op1 == .String and std.mem.eql(u8, str, op1.String),
+        .AddressCode => |addr| op1 == .AddressCode and addr == op1.AddressCode,
+        .AddressHeap => |addr| op1 == .AddressHeap and addr == op1.AddressHeap,
+        .AddressStack => |addr| op1 == .AddressStack and addr == op1.AddressStack,
+        .AddressString => |addr| cmp: {
+            if (op1 != .AddressString) break :cmp false;
+
+            if (addr == op1.AddressString) break :cmp true;
+
+            const str1 = try vm.strings.loadAll(op1.AddressString);
+            const str2 = try vm.strings.loadAll(addr);
+
+            break :cmp std.mem.eql(u8, str1, str2);
+        },
     };
 
     try vm.stack.push(.{ .Integer = @boolToInt(equal) });
