@@ -176,7 +176,7 @@ pub const Instruction = extern enum(u8) {
             .StoreG => instStoreG(vm),
             .StoreN => instStoreN(vm),
 
-            else => error.InstructionNotSupported,
+            // else => error.InstructionNotSupported,
         };
     }
 };

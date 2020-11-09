@@ -5,6 +5,20 @@ const Allocator = std.mem.Allocator;
 const getAutoHashFn = std.hash_map.getAutoHashFn;
 const getAutoEqlFn = std.hash_map.getAutoEqlFn;
 
+pub fn returnType (comptime function: anytype) type {
+    return @typeInfo(@TypeOf(function)).Fn.return_type.?;
+}
+
+pub fn errorSet (comptime function: anytype) type {
+    const type_info = @typeInfo(returnType(function));
+
+    if (type_info != .ErrorUnion) {
+        return @TypeOf(@as(?[]const Error {}, null));
+    }
+
+    return type_info.ErrorUnion.error_set;
+}
+
 const NodeColor = enum {
     Red,
     Black,
@@ -46,7 +60,7 @@ pub fn RedBlackTree(comptime T: type, comptime comparator: fn (T, T) i32) type {
                 self.deinitNode(node_value.children[0]);
                 self.deinitNode(node_value.children[1]);
                 
-                self.allocator.destroy(node);
+                self.allocator.destroy(node_value);
             }
         }
 
@@ -120,7 +134,7 @@ pub fn RedBlackTree(comptime T: type, comptime comparator: fn (T, T) i32) type {
             return self.rotateRight(root);
         }
 
-        fn insertRecursive(self: *Tree, root: ?*Node, value: T) @TypeOf(Node.create).ReturnType.ErrorSet!*Node {
+        fn insertRecursive(self: *Tree, root: ?*Node, value: T) errorSet(Node.create)!*Node {
             if (root) |root_node| {
                 // When cmp > 0, root.value is greater than value
                 // We do not allow repeated values in our tree (cmp == 0)
@@ -379,7 +393,7 @@ pub fn RedBlackTree(comptime T: type, comptime comparator: fn (T, T) i32) type {
             return PreOrderIterator.init(self.root, reverse);
         }
 
-        pub fn print(self: *const Tree, out: var, value_print: fn (var, T) anyerror!void) !void {
+        pub fn print(self: *const Tree, out: anytype, value_print: fn (anytype, T) anyerror!void) !void {
             var iter = self.iterPreStruct(false);
 
             var ident: i32 = 0;

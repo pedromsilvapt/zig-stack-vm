@@ -4,7 +4,7 @@ A reimplementation of a university project in zig. Implements a simple stack-bas
 bytecode virtual machine.
 
 ## Installation
-This project was developed on Zig 0.6. Zig is a fast moving language, newer versions
+This project was developed on Zig 0.7. Zig is a fast moving language, newer (and older) versions
 might not be able to compile it.
 
 ```bash
@@ -37,15 +37,11 @@ const Parser = svm.Parser;
 const VirtualMachine = svm.VirtualMachine;
 
 pub fn main () !void {
-    // Like most libraries in zig, this project is allocator-agnostic,
-    // This means you have to pass in an allocator yourself.
-    // The page_allocator uses direct calls to mmap, and thus is not recommended
-    // for real world use directly. However, Zig currently does not have a 
-    // General Purpose Allocator yet, so we can use it just for testing purposes,
-    // or pass in the std.heap.c_allocator, which requires linking against 
-    // libc when compiling the project
-    const allocator = std.heap.page_allocator;
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = general_purpose_allocator.deinit();
     
+    var allocator = &general_purpose_allocator.allocator;
+
     const source = 
         \\ pushs "Type your name, please.\n"
         \\ writes

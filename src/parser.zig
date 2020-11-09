@@ -337,12 +337,23 @@ pub const Parser = struct {
                 while (self.peek()) |char| {
                     if (escaping) {
                         // TODO: Add more escape characters
-                        try buffer.append(switch (char) {
+                        var escaped: ?u8 = switch (char) {
                             'n' => '\n',
                             't' => '\t',
                             'r' => '\r',
-                            else => char,
-                        });
+                            else => null,
+                        };
+
+                        if (escaped == null and char == quote_char) {
+                            escaped = quote_char;
+                        }
+
+                        if (escaped) |escaped_char| {
+                            try buffer.append(escaped_char);
+                        } else {
+                            try buffer.append('\\');
+                            try buffer.append(char);
+                        }
 
                         escaping = false;
                     } else {
@@ -408,7 +419,7 @@ pub const Parser = struct {
 
             // String Parameters
             .PushS, .Err => return InstructionParameter{ .String = try self.parseString() },
-            else => return error.NoMatch,
+            // else => return error.NoMatch,
         }
     }
 
@@ -498,7 +509,7 @@ pub const Parser = struct {
         }
 
         for (label_placeholders.items) |label| {
-            if (label_addresses.getValue(label.name)) |addr| {
+            if (label_addresses.get(label.name)) |addr| {
                 try writer.writeSizeAt(addr, label.position);
             } else {
                 return error.MissingLabel;

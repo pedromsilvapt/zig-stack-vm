@@ -7,12 +7,15 @@ const InstructionsReader = @import("./instruction.zig").InstructionsReader;
 const Parser = @import("./parser.zig").Parser;
 
 pub fn main() anyerror!void {
-    const alloc = std.heap.page_allocator;
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = general_purpose_allocator.deinit();
+    
+    var alloc = &general_purpose_allocator.allocator;
 
     const params = comptime [_]clap.Param(clap.Help){
         clap.parseParam("-h, --help          Display this help and exit.") catch unreachable,
         clap.Param(clap.Help){
-            .takes_value = true,
+            .takes_value = .One,
         },
     };
 
@@ -20,7 +23,16 @@ pub fn main() anyerror!void {
     defer iter.deinit();
 
     // Parse the arguments
-    var args = try clap.ComptimeClap(clap.Help, &params).parse(alloc, clap.args.OsIterator, &iter);
+    const Clap = clap.ComptimeClap(clap.Help, clap.args.OsIterator, &params);
+    
+    var diag: clap.Diagnostic = undefined;
+
+    // Parse the arguments
+    var args = Clap.parse(alloc, &iter, &diag) catch |err| {
+        // Report useful error and exit
+        diag.report(std.io.getStdErr().outStream(), err) catch {};
+        return err;
+    };
     defer args.deinit();
 
     if (args.flag("--help")) {

@@ -11,6 +11,7 @@ pub const InstructionSpan = @import("./parser.zig").InstructionSpan;
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const Gpa = std.heap.GeneralPurposeAllocator(.{});
 
 comptime {
     @export(Instruction, .{ .name = "stackvm_instruction_t" });
@@ -24,18 +25,21 @@ comptime {
 }
 
 export fn stackvm_allocator_init() *Allocator {
-    return std.heap.page_allocator;
+    var general_purpose_allocator = std.heap.page_allocator.create(Gpa) catch {
+        @panic("Could not create allocator.\n");
+    };
+    
+    general_purpose_allocator.* = Gpa {};
+
+    return &general_purpose_allocator.allocator;
 }
 
-export fn stackvm_allocator_deinit(allocator: *Allocator) void {}
+export fn stackvm_allocator_deinit(allocator: *Allocator) void {
+    var general_purpose_allocator = @fieldParentPtr(Gpa, "allocator", allocator);
 
-// struct TextPosition
-export fn stackvm_textposition_init(line: u32, column: u32, offset: u32) TextPosition {
-    return TextPosition.init(line, column, offset);
-}
+    _ = general_purpose_allocator.deinit();
 
-export fn stackvm_textposition_init_empty() TextPosition {
-    return TextPosition.initEmpty();
+    std.heap.page_allocator.destroy(general_purpose_allocator);
 }
 
 export fn stackvm_instructionspan_init(instruction: usize, start: TextPosition, end: TextPosition) InstructionSpan {
