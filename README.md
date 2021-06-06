@@ -4,7 +4,7 @@ A reimplementation of a university project in zig. Implements a simple stack-bas
 bytecode virtual machine.
 
 ## Installation
-This project was developed on Zig 0.7. Zig is a fast moving language, newer (and older) versions
+This project was developed on Zig 0.8. Zig is a fast moving language, newer (and older) versions
 might not be able to compile it.
 
 ```bash
@@ -24,7 +24,7 @@ zig build -Drelease-fast
 The compiled application can be ran directly from the command line, and accepts
 one file path as an argument.
 ```bash
-./zig-cache/bin/stackvm examples/fib.ir
+./zig-out/bin/stackvm ./examples/fib.ir
 ```
 
 Aditionally one can also embed the virtual machine in a custom application easily.

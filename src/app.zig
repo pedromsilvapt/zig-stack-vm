@@ -9,13 +9,13 @@ const Parser = @import("./parser.zig").Parser;
 pub fn main() anyerror!void {
     var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = general_purpose_allocator.deinit();
-    
+
     var alloc = &general_purpose_allocator.allocator;
 
     const params = comptime [_]clap.Param(clap.Help){
         clap.parseParam("-h, --help          Display this help and exit.") catch unreachable,
         clap.Param(clap.Help){
-            .takes_value = .One,
+            .takes_value = .one,
         },
     };
 
@@ -23,21 +23,21 @@ pub fn main() anyerror!void {
     defer iter.deinit();
 
     // Parse the arguments
-    const Clap = clap.ComptimeClap(clap.Help, clap.args.OsIterator, &params);
-    
+    const Clap = clap.ComptimeClap(clap.Help, &params);
+
     var diag: clap.Diagnostic = undefined;
 
     // Parse the arguments
-    var args = Clap.parse(alloc, &iter, &diag) catch |err| {
+    var args = Clap.parse(&iter, .{ .allocator = alloc }) catch |err| {
         // Report useful error and exit
-        diag.report(std.io.getStdErr().outStream(), err) catch {};
+        diag.report(std.io.getStdErr().writer(), err) catch {};
         return err;
     };
     defer args.deinit();
 
     if (args.flag("--help")) {
         const stderr_file = std.io.getStdErr();
-        var stderr_out_stream = stderr_file.outStream();
+        var stderr_out_stream = stderr_file.writer();
 
         try clap.help(stderr_out_stream, &params);
     } else {
@@ -53,12 +53,12 @@ pub fn main() anyerror!void {
 
         var reader = parser.parse() catch |err| {
             if (parser.err_message) |msg| {
-                std.debug.print("ERROR Ln {}, Col {}: {}\n", .{ parser.position.line + 1, parser.position.column + 1, msg });
+                std.debug.print("ERROR Ln {}, Col {}: {s}\n", .{ parser.position.line + 1, parser.position.column + 1, msg });
             } else {
                 std.debug.print("ERROR Ln {}, Col {}\n", .{ parser.position.line + 1, parser.position.column + 1 });
             }
 
-            std.debug.print("\t{}\n", .{parser.getCurrentLine()});
+            std.debug.print("\t{s}\n", .{parser.getCurrentLine()});
 
             return;
         };
@@ -73,10 +73,10 @@ pub fn main() anyerror!void {
             };
 
             if (parser.source_map.find(vm.last_instruction)) |span| {
-                std.debug.print("Runtime Error in Ln {}, Col {}: {}\n", .{ span.start.line + 1, span.start.column + 1, msg });
-                std.debug.print("\t{}\n", .{parser.getSourceSpan(span.start, span.end)});
+                std.debug.print("Runtime Error in Ln {}, Col {}: {s}\n", .{ span.start.line + 1, span.start.column + 1, msg });
+                std.debug.print("\t{s}\n", .{parser.getSourceSpan(span.start, span.end)});
             } else {
-                std.debug.print("Runtime Error: {}\n", .{msg});
+                std.debug.print("Runtime Error: {s}\n", .{msg});
                 std.debug.print("Instruction Address: {}\n", .{vm.last_instruction});
             }
         };

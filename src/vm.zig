@@ -314,7 +314,7 @@ pub fn Stack(comptime T: type) type {
         }
 
         pub usingnamespace if (@typeInfo(T) == .Union) struct {
-            pub fn popField(self: *Self, comptime tag: @TagType(T)) error{InvalidOperand,StackUnderflow}!std.meta.TagPayloadType(T, tag) {
+            pub fn popField(self: *Self, comptime tag: std.meta.TagType(T)) error{ InvalidOperand, StackUnderflow }!std.meta.TagPayload(T, tag) {
                 if (self.list.items.len <= 0) {
                     return error.StackUnderflow;
                 }
@@ -324,7 +324,7 @@ pub fn Stack(comptime T: type) type {
                 // the value is still at the top of the stack for better debugging
                 var un = self.list.items[self.list.items.len - 1];
 
-                if (un != tag){
+                if (un != tag) {
                     return error.InvalidOperand;
                 }
 

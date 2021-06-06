@@ -13,9 +13,12 @@ pub fn build(b: *Builder) void {
 
     const version = b.version(1, 0, 0);
 
-    const lib = b.addSharedLibrary("libstackvm", "src/lib.zig", version);
+    // Replaced `version` with `.unversioned` to temporarily work around a bug
+    // tracked by https://github.com/ziglang/zig/issues/9013
+    const lib = b.addSharedLibrary("libstackvm", "src/lib.zig", .unversioned);
     lib.setTarget(target);
     lib.setBuildMode(mode);
+    lib.addPackagePath("header_gen", "lib/zig-header-gen/src/header_gen.zig");
     lib.install();
 
     const exe = b.addExecutable("stackvm", "src/app.zig");
